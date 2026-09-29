@@ -1,0 +1,132 @@
+# Optional interactive lf configuration.
+set shell sh
+set shellopts '-eu'
+set ifs "\n"
+
+set preview
+set previewer ~/.config/lf/preview
+set hidden
+set ignorecase
+set smartcase
+set info size:time
+set dircounts
+set infotimefmtnew "01-02 15:04"
+set infotimefmtold "2006-01-02"
+set timefmt "2006-01-02 15:04:05"
+set scrolloff 3
+set mouse
+set period 1
+
+# Escape cancels transient UI state and clears both selection and file clipboard.
+nmap <esc> :unselect; clear; setfilter
+vmap <esc> :visual-discard; unselect; clear; setfilter
+cmap <esc> :cmd-escape; unselect; clear; setfilter
+
+# Keep download folders ordered with the newest files first.
+setlocal ~/Downloads sortby time
+setlocal ~/Downloads reverse
+setlocal "~/Downloads/Telegram Desktop" sortby time
+setlocal "~/Downloads/Telegram Desktop" reverse
+
+# Rename updates ctime without changing the file's original modification time.
+setlocal ~/.trash sortby ctime
+setlocal ~/.trash reverse
+setlocal ~/.trash dirfirst false
+setlocal ~/.trash info size:ctime
+
+map a :push %touch<space>
+map A :push %mkdir<space>
+
+cmd trash ${{
+	set -f
+	trash=$HOME/.trash
+	mkdir -p -m 700 -- "$trash"
+	for path in $fx; do
+		name=$(basename -- "$path")
+		stamp=$(date +%Y%m%d-%H%M%S-%N)
+		stem=$name
+		ext=
+		if [ ! -d "$path" ]; then
+			case $name in
+			*.tar.gz|*.tar.bz2|*.tar.xz) ext=.tar.${name##*.}; stem=${name%"$ext"} ;;
+			*.*) stem=${name%.*}; ext=.${name##*.} ;;
+			esac
+			[ -n "$stem" ] || { stem=$name; ext=; }
+		fi
+		mv -nT -- "$path" "$trash/${stem}_$stamp$ext"
+		if [ -e "$path" ] || [ -L "$path" ]; then
+			printf '未移动，原文件保留：%s\n' "$path" >&2
+			exit 1
+		fi
+	done
+}}
+map D trash
+
+cmd copy_path ${{
+	set -f
+	printf '%s\n' $fx | wl-copy
+}}
+map gp copy_path
+
+cmd copy_name ${{
+	set -f
+	for path in $fx; do
+		basename -- "$path"
+	done | wl-copy
+}}
+map gn copy_name
+
+cmd dir_size %{{
+	set -f
+	[ -d "$f" ] || { printf 'not a directory: %s\n' "$f"; exit 1; }
+	size=$(du -sh -- "$f" | cut -f1)
+	printf '目录大小: %s\n' "$size"
+}}
+map zd dir_size
+
+cmd fzf_jump ${{
+	set -f
+	target=$(find . -path '*/.git' -prune -o \( -type f -o -type d \) -print 2>/dev/null | fzf) || exit 0
+	[ -n "$target" ] || exit 0
+	target=$(realpath -- "$target")
+	escaped=$(printf '%s' "$target" | sed 's/\\/\\\\/g;s/"/\\"/g')
+	lf -remote "send $id select \"$escaped\""
+}}
+map <c-f> fzf_jump
+
+cmd fzf_grep ${{
+	set -f
+	pattern=$1
+	[ -n "$pattern" ] || exit 0
+	target=$(grep -RIl --exclude-dir=.git -- "$pattern" . 2>/dev/null | fzf \
+		--preview "grep -n --color=always -- \"$pattern\" {} 2>/dev/null | head -100") || exit 0
+	[ -n "$target" ] || exit 0
+	target=$(realpath -- "$target")
+	escaped=$(printf '%s' "$target" | sed 's/\\/\\\\/g;s/"/\\"/g')
+	lf -remote "send $id select \"$escaped\""
+}}
+map <c-g> :push :fzf_grep<space>
+
+cmd extract ${{
+	set -f
+	case $f in
+	*.tar.bz|*.tar.bz2|*.tbz|*.tbz2) tar xjvf "$f" ;;
+	*.tar.gz|*.tgz) tar xzvf "$f" ;;
+	*.tar.xz|*.txz) tar xJvf "$f" ;;
+	*.zip) unzip "$f" ;;
+	*.7z) 7z x "$f" ;;
+	*) printf 'unknown archive: %s\n' "$f" ;;
+	esac
+}}
+
+cmd tar ${{
+	set -f
+	[ -n "${1:-}" ] || { printf 'archive name required\n' >&2; exit 2; }
+	"$HOME/.config/lf/scripts/archive" tar "$1.tar.gz" $fx
+}}
+
+cmd zip ${{
+	set -f
+	[ -n "${1:-}" ] || { printf 'archive name required\n' >&2; exit 2; }
+	"$HOME/.config/lf/scripts/archive" zip "$1.zip" $fx
+}}
