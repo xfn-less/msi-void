@@ -7,7 +7,10 @@ set -eu
 # 如果安装时跳过网络，重启后先运行：
 #   ip link
 #   sudo -v
-#   wpa_passphrase 'Wi-Fi 名称' | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf
+#   {
+#     printf 'mac_addr=1\npreassoc_mac_addr=1\n'
+#     wpa_passphrase 'Wi-Fi 名称'
+#   } | sudo tee /etc/wpa_supplicant/wpa_supplicant.conf
 #   sudo chmod 600 /etc/wpa_supplicant/wpa_supplicant.conf
 #   sudo ln -sfn /etc/sv/wpa_supplicant /var/service/wpa_supplicant
 #   sudo ln -sfn /etc/sv/dhcpcd /var/service/dhcpcd
