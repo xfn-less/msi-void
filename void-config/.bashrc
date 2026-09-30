@@ -4,23 +4,25 @@ PS1='\[\e[1m\]\A \W\$ \[\e[0m\]'
 
 . /usr/share/bash-completion/bash_completion
 eval "$(fzf --bash)"
+export FZF_COMPLETION_TRIGGER=''
 export FZF_DEFAULT_OPTS='--style minimal --layout reverse --info inline --exact'
-export FZF_CTRL_T_OPTS="--preview '
-	case \$(file --mime-type -b {}) in
-		image/*) chafa -f symbols -s \"\${FZF_PREVIEW_COLUMNS}x\${FZF_PREVIEW_LINES}\" {} ;;
+_fzf_preview='
+	case $(file --mime-type -b {}) in
+		image/*) chafa -f symbols -s "${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}" {} ;;
 		inode/directory) ls -la --color=always {} ;;
-		text/*|*/xml|*/json|*/javascript) sed -n \"1,120p\" {} ;;
+		text/*|*/xml|*/json|*/javascript) sed -n "1,120p" {} ;;
 		*) file {} ;;
 	esac
-' --preview-window right,50%,noborder"
+'
+export FZF_CTRL_T_OPTS="--preview '$_fzf_preview' --preview-window right,50%,noborder"
+export FZF_COMPLETION_OPTS="--preview '$_fzf_preview' --preview-window right,50%,noborder"
 export FZF_ALT_C_OPTS="--preview 'ls -la --color=always {}' --preview-window right,50%,noborder"
-export FZF_DEFAULT_COMMAND='find . -type f -not -path "*/.git/*"'
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_CTRL_R_OPTS="--bind 'ctrl-y:execute-silent(printf %s {2..} | wl-copy)+abort'"
+unset _fzf_preview
 
 set -o noclobber
 
 export EDITOR=vis VISUAL=vis
-export VIS_PATH="$HOME/.config/vis"
 
 alias ld='ls -Alh --color=auto'
 alias gl='git clone --depth=1'

@@ -78,16 +78,16 @@ Mod+escape repeat=false { spawn-sh "swaylock -f -u -c 000000 && niri msg action 
     Mod+p repeat=false { spawn-sh "grim - | swappy -f - -o - | wl-copy -t image/png"; }
     Mod+q repeat=false { spawn-sh "grim -g \"$(slurp)\" - | swappy -f - -o - | wl-copy -t image/png"; }
     Mod+r repeat=false { switch-preset-column-width; }
-    Mod+shift+q repeat=false { close-window; }
+    Mod+alt+q repeat=false { close-window; }
 
     Mod+s cooldown-ms=70 { focus-column-left; }
     Mod+f cooldown-ms=70 { focus-column-right; }
     Mod+e cooldown-ms=70 { focus-window-or-workspace-up; }
     Mod+d cooldown-ms=70 { focus-window-or-workspace-down; }
-    Mod+shift+s cooldown-ms=70 { move-column-left; }
-    Mod+shift+f cooldown-ms=70 { move-column-right; }
-    Mod+shift+e cooldown-ms=70 { move-window-up-or-to-workspace-up; }
-    Mod+shift+d cooldown-ms=70 { move-window-down-or-to-workspace-down; }
+    Mod+alt+s cooldown-ms=70 { move-column-left; }
+    Mod+alt+f cooldown-ms=70 { move-column-right; }
+    Mod+alt+e cooldown-ms=70 { move-window-up-or-to-workspace-up; }
+    Mod+alt+d cooldown-ms=70 { move-window-down-or-to-workspace-down; }
 
     XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "set" "1%-"; }
     XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "set" "1%+"; }

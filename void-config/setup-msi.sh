@@ -226,10 +226,6 @@ sudo install -Dm755 "$vis_tmp/vis-master" /usr/local/bin/vis
 rm -rf "$vis_tmp"
 trap - 0 1 2 15
 
-## Vis 配置
-mkdir -p "$HOME/.config/vis"
-cp -R vis/. "$HOME/.config/vis/"
-
 ## LF 配置
 mkdir -p "$HOME/.config/lf"
 cp -R lf/. "$HOME/.config/lf/"
