@@ -121,7 +121,7 @@ mkdir -p "$HOME/.config/niri"
 install -m 644 niri/config.kdl "$HOME/.config/niri/config.kdl"
 niri validate --config "$HOME/.config/niri/config.kdl"
 
-## 中文输入
+## 中文输入（自然码：方案名 zrm，词库来自 fcitx5-chinese-addons/libime）
 sudo xbps-install -y fcitx5 fcitx5-chinese-addons
 mkdir -p "$HOME/.config/fcitx5/conf"
 cat <<'EOF' >"$HOME/.config/fcitx5/profile"

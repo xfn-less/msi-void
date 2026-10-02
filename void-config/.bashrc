@@ -4,7 +4,6 @@ PS1='\[\e[1m\]\A \W\$ \[\e[0m\]'
 
 . /usr/share/bash-completion/bash_completion
 eval "$(fzf --bash)"
-export FZF_COMPLETION_TRIGGER=''
 export FZF_DEFAULT_OPTS='--style minimal --layout reverse --info inline --exact'
 _fzf_preview='
 	case $(file --mime-type -b {}) in

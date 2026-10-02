@@ -2,7 +2,7 @@
 
 ```text
 香港：客户端 -> 103.146.230.179:8443 -> 香港出口
-国内：客户端 -> 103.146.230.179:9443 -> 183.56.224.54:443 -> 国内出口
+国内：客户端 -> 103.146.230.179:9443 -> 183.56.236.235:443 -> 国内出口
 网站：         103.146.230.179:443
 ```
 
@@ -71,7 +71,7 @@
 - SSH：`ssh -p 40296 xfn@103.146.230.179`
 - `443` 留给网站
 - `8443`：香港 Xray
-- `9443`：转发到国内 `183.56.224.54:443`
+- `9443`：转发到国内 `183.56.236.235:443`
 - `3389`：xrdp 只听本机，SSH 隧道后连；工作机见 `void-config/work-config.sh`
 - Xray 配置：`/usr/local/etc/xray/config.json`
 - 转发配置：`/etc/systemd/system/xray-relay.{socket,service}`
@@ -118,7 +118,7 @@ WantedBy=sockets.target
 After=network-online.target
 
 [Service]
-ExecStart=/lib/systemd/systemd-socket-proxyd 183.56.224.54:443
+ExecStart=/lib/systemd/systemd-socket-proxyd 183.56.236.235:443
 NoNewPrivileges=true
 PrivateTmp=true
 ```
@@ -133,21 +133,25 @@ sudo ss -lntp | grep -E ':(8443|9443)\b'
 
 ## 国内服务器
 
-- SSH：`ssh root@183.56.224.54`
+- SSH：`ssh root@183.56.236.235`
 - `443`：国内 Xray，只允许来源 `103.146.230.179/32`
 - 配置：`/usr/local/etc/xray/config.json`
 
 国内下载 GitHub 较慢：在本机通过 Mihomo 下载并校验，再 SCP 过去，不需要经过香港服务器。
 
 ```sh
+set -euo pipefail
 version=$(curl -fsSL https://api.github.com/repos/XTLS/Xray-core/releases/latest |
   sed -n 's/.*"tag_name": "\(v[^"]*\)".*/\1/p' | head -n 1)
+# API 限流或解析失败时 version 为空，下载会变成 .../download//Xray-linux-64.zip → 404
+[ -n "$version" ] || { echo "failed to resolve latest Xray version from GitHub API" >&2; exit 1; }
+echo "Xray $version"
 curl -fLO https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh
 curl -fLO "https://github.com/XTLS/Xray-core/releases/download/$version/Xray-linux-64.zip"
 curl -fLO "https://github.com/XTLS/Xray-core/releases/download/$version/Xray-linux-64.zip.dgst"
 expected=$(sed -n 's/^SHA2-256= //p' Xray-linux-64.zip.dgst)
 printf '%s  Xray-linux-64.zip\n' "$expected" | sha256sum -c -
-scp install-release.sh Xray-linux-64.zip root@183.56.224.54:/tmp/
+scp install-release.sh Xray-linux-64.zip root@183.56.236.235:/tmp/
 ```
 
 在国内服务器部署：
@@ -187,10 +191,22 @@ sudo sv restart mihomo
 mihomoctl use global hk
 curl -4 https://icanhazip.com    # 应为 103.146.230.179
 mihomoctl use global cn
-curl -4 https://icanhazip.com    # 应为 183.56.224.54
+curl -4 https://icanhazip.com    # 应为 183.56.236.235
 mihomoctl use global hk
 mihomoctl use rule split
 ```
+
+## 更换国内服务器
+
+1. 备份本机和手机 Mihomo。
+2. 新国内机按上文安装 Xray，生成新 UUID / X25519 / short ID，写入 `443` 配置；防火墙只放行香港 `103.146.230.179/32` 访问 `443`。
+3. 香港把 `xray-relay.service` 的目标改成新国内 IP，然后：
+   ```sh
+   sudo systemctl daemon-reload
+   sudo systemctl restart xray-relay.socket
+   ```
+4. 本机和手机 Mihomo：更新「国内节点」的 uuid / public-key / short-id；把规则里的旧国内 IP 换成新 IP（`IP-CIDR,<新国内>/32,香港`）。
+5. `mihomoctl use global cn` 后 `curl -4 https://icanhazip.com` 应为新国内 IP；确认后再关旧机。
 
 ## 更换香港服务器
 
