@@ -26,6 +26,73 @@ export EDITOR=vis VISUAL=vis
 alias ld='ls -Alh --color=auto'
 alias gl='git clone --depth=1'
 
+xbs() {
+	local pkgs
+	pkgs=$(
+		xbps-query -Rs . |
+			fzf -m --query="$*" --prompt 'xbs> ' \
+				--preview 'xbps-query -RS {2}' --preview-window right,50%,noborder |
+			awk '{print $2}' |
+			xargs -r -n1 xbps-uhelper getpkgname
+	)
+	[[ -n $pkgs ]] || return
+	sudo xbps-install -y $pkgs
+}
+
+xbr() {
+	local pkgs
+	pkgs=$(
+		xbps-query -m |
+			xargs -r -n1 xbps-uhelper getpkgname |
+			fzf -m --query="$*" --prompt 'xbr> ' \
+				--preview 'xbps-query -S {1}' --preview-window right,50%,noborder
+	)
+	[[ -n $pkgs ]] || return
+	sudo xbps-remove -Ry $pkgs
+}
+
+xba() {
+	local pkgs
+	pkgs=$(
+		xbps-query -l | sed 's/^.. //' |
+			fzf -m --query="$*" --prompt 'xba> ' \
+				--preview 'xbps-query -S {1}' --preview-window right,50%,noborder |
+			awk '{print $1}' |
+			xargs -r -n1 xbps-uhelper getpkgname
+	)
+	[[ -n $pkgs ]] || return
+	sudo xbps-remove -Ry $pkgs
+}
+
+xbo() {
+	local pkgs
+	pkgs=$(xbps-query -O) || return
+	[[ -n $pkgs ]] || return
+	pkgs=$(
+		printf '%s\n' "$pkgs" |
+			fzf -m --query="$*" --prompt 'xbo> ' \
+				--preview 'xbps-remove -nR {1}' --preview-window right,50%,noborder |
+			xargs -r -n1 xbps-uhelper getpkgname
+	)
+	[[ -n $pkgs ]] || return
+	sudo xbps-remove -Ry $pkgs
+}
+
+xbf() {
+	local pkg
+	pkg=$(
+		xbps-query -l |
+			fzf --query="$*" --prompt 'xbf> ' \
+				--preview 'xbps-query -f {2}' --preview-window right,50%,noborder |
+			awk '{print $2}'
+	)
+	[[ -n $pkg ]] || return
+	xbps-query -f "$(xbps-uhelper getpkgname "$pkg")"
+}
+
+xbu() { sudo xbps-install -Syu; }
+xbc() { sudo xbps-remove -O; }
+
 lfcd() {
 	cd "$(command lf -print-last-dir "$@")" || return
 }
@@ -45,3 +112,5 @@ HISTSIZE=100000
 HISTFILESIZE=200000
 HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend lithist
+
+fastfetch
